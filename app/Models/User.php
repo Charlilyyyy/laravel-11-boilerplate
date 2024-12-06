@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -44,5 +45,31 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Boot function to reset the auto-increment ID.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            $maxId = DB::table('users')->max('id');
+            $nextId = $maxId + 1;
+
+            // Check if any lower ID is available
+            $availableId = DB::table('users')
+                ->select(DB::raw('id + 1 AS next_id'))
+                ->whereRaw('id + 1 NOT IN (SELECT id FROM users)')
+                ->orderBy('id')
+                ->first();
+
+            if ($availableId && $availableId->next_id < $nextId) {
+                $nextId = $availableId->next_id;
+            }
+
+            $user->id = $nextId;
+        });
     }
 }
