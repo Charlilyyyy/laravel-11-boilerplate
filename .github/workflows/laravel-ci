@@ -1,0 +1,46 @@
+name: Laravel CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up PHP with the required version
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Adjust the PHP version to match your Laravel project's requirement
+          extensions: mbstring, bcmath, pdo, pdo_mysql
+          ini-values: post_max_size=256M, max_execution_time=300
+          coverage: none
+
+      # Install Composer dependencies
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-scripts --no-progress
+
+      # Set up Laravel application
+      - name: Set up environment
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      # Run the migrations
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      # Run tests
+      - name: Run tests
+        run: vendor/bin/phpunit
